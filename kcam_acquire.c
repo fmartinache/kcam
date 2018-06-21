@@ -21,7 +21,7 @@
  * ways, refer to the take.c utility. For serial, see serial_cmd.c.
  * 
  * For a sample Windows GUI application code, see wintake.
- *     ircam1conf[0].frameindex = i;
+ *     kcamconf[0].frameindex = i;
  * (C) 1997-2007 Engineering Design Team, Inc.
  */
 
@@ -29,7 +29,7 @@
  * 
  * 
  * Compile with:
- * gcc imgtake.c -o imgtake -I/opt/EDTpdv -I/home/scexao/src/cacao/src/ImageStreamIO -I/home/scexao/src/cacao/src /home/scexao/src/cacao/src/ImageStreamIO/ImageStreamIO.c /opt/EDTpdv/libpdv.a -lm -lpthread -ldl 
+ * gcc kcam_acquire.c -o kcam_acquire -I/opt/EDTpdv -I/home/scexao/src/cacao/src/ImageStreamIO -I/home/scexao/src/cacao/src /home/scexao/src/cacao/src/ImageStreamIO/ImageStreamIO.c /opt/EDTpdv/libpdv.a -lm -lpthread -ldl 
  * 
  * 
  */
@@ -37,13 +37,13 @@
 #include "edtinc.h"
 #include "ImageStruct.h"
 #include "ImageStreamIO.h"
-#include "cred2struct.h"
+#include "cred1struct.h"
 
-CRED2STRUCT *ircam1conf;
+CRED1STRUCT *kcamconf;
 
 static void usage(char *progname, char *errmsg);
 static void save_image(u_char * image_p, int width, int height, int depth,
-					   char *basename, int count);
+		       char *basename, int count);
 
 // ============================================================================
 // ============================================================================
@@ -70,8 +70,6 @@ int main(int argc, char **argv) {
   unsigned short int *imageushort;
   double value_ave;
   int pix;
-  float exposure = 0.05; // exposure time [ms]
-
 
   int xsize, ysize;
 
@@ -89,69 +87,69 @@ int main(int argc, char **argv) {
   --argc;
   ++argv;
   while (argc && ((argv[0][0] == '-') || (argv[0][0] == '/'))) {
-	switch (argv[0][1]) {
+    switch (argv[0][1]) {
+      
+    case 'N': // ------------------------------------------------------
+      ++argv;
+      --argc;
+      if (argc < 1) {
+	usage(progname, "Error: option 'N' requires a numeric argument\n");
+      }
+      if ((argv[0][0] >= '0') && (argv[0][0] <= '9')) {
+	numbufs = atoi(argv[0]);
+      }
+      else {
+	usage(progname, "Error: option 'N' requires a numeric argument\n");
+      }
+      break;
+      
+    case 'b': // ------------------------------------------------------
+      ++argv;
+      --argc;
+      strcpy(bmpfname, argv[0]);
+      SAVEBMP = 1;
+      break;
+      
+    case 'l': // ------------------------------------------------------
+      ++argv;
+      --argc;
+      if (argc < 1) {
+	usage(progname, "Error: option 'l' requires a numeric argument\n");
+      }
+      if ((argv[0][0] >= '0') && (argv[0][0] <= '9')) {
+	loops = atoi(argv[0]);
+      }
+      else {
+	usage(progname, "Error: option 'l' requires a numeric argument\n");
+      }
+      break;
+      
+    case '-': // ------------------------------------------------------
+      if (strcmp(argv[0], "--help") == 0) {
+	usage(progname, "");
+	exit(0);
+      } else {
+	fprintf(stderr, "unknown option: %s\n", argv[0]);
+	usage(progname, "");
+	exit(1);
+      }
+      break;
 
-	case 'N': // ------------------------------------------------------
-	  ++argv;
-	  --argc;
-	  if (argc < 1) {
-		usage(progname, "Error: option 'N' requires a numeric argument\n");
-	  }
-	  if ((argv[0][0] >= '0') && (argv[0][0] <= '9')) {
-		numbufs = atoi(argv[0]);
-	  }
-	  else {
-		usage(progname, "Error: option 'N' requires a numeric argument\n");
-	  }
-	  break;
-
-	case 'b': // ------------------------------------------------------
-	  ++argv;
-	  --argc;
-	  strcpy(bmpfname, argv[0]);
-	  SAVEBMP = 1;
-	  break;
-
-	case 'l': // ------------------------------------------------------
-	  ++argv;
-	  --argc;
-	  if (argc < 1) {
-		usage(progname, "Error: option 'l' requires a numeric argument\n");
-	  }
-	  if ((argv[0][0] >= '0') && (argv[0][0] <= '9')) {
-		loops = atoi(argv[0]);
-	  }
-	  else {
-		usage(progname, "Error: option 'l' requires a numeric argument\n");
-	  }
-	  break;
-
-	case '-': // ------------------------------------------------------
-	  if (strcmp(argv[0], "--help") == 0) {
-		usage(progname, "");
-		exit(0);
-	  } else {
-		fprintf(stderr, "unknown option: %s\n", argv[0]);
-		usage(progname, "");
-		exit(1);
-	  }
-	  break;
-
-
-	default:
-	  fprintf(stderr, "unknown flag -'%c'\n", argv[0][1]);
-	case '?':
-	case 'h':
-	  usage(progname, "");
-	  exit(0);
-	}
-	argc--;
-	argv++;
+      
+    default:
+      fprintf(stderr, "unknown flag -'%c'\n", argv[0][1]);
+    case '?':
+    case 'h':
+      usage(progname, "");
+      exit(0);
+    }
+    argc--;
+    argv++;
   }
-
-  initCRED2STRUCT();
-  printCRED2STRUCT(0);
-
+  
+  initCRED1STRUCT();
+  printCRED1STRUCT(0);
+  
   /*
    * open the interface
    * 
@@ -165,22 +163,22 @@ int main(int argc, char **argv) {
   
 
   if (edt_devname[0]) {
-	unit = edt_parse_unit_channel(edt_devname, edt_devname,
-								  EDT_INTERFACE, &channel);
+    unit = edt_parse_unit_channel(edt_devname, edt_devname,
+				  EDT_INTERFACE, &channel);
   }
   else {
-	strcpy(edt_devname, EDT_INTERFACE);
+    strcpy(edt_devname, EDT_INTERFACE);
   }
-
+  
   if ((pdv_p = pdv_open_channel(edt_devname, unit, channel)) == NULL) {
-	sprintf(errstr, "pdv_open_channel(%s%d_%d)", edt_devname, unit, channel);
-	pdv_perror(errstr);
-	return (1);
+    sprintf(errstr, "pdv_open_channel(%s%d_%d)", edt_devname, unit, channel);
+    pdv_perror(errstr);
+    return (1);
   }
-
+  
   pdv_flush_fifo(pdv_p);
-    
-
+  
+  
   IMAGE *imarray;    // pointer to array of images
   int NBIMAGES = 1;  // can hold 1 image
   long naxis;        // number of axis
@@ -189,18 +187,18 @@ int main(int argc, char **argv) {
   int shared;        // 1 if image in shared memory
   int NBkw;          // number of keywords supported
   
-  xsize = ( ircam1conf[0].x1 - ircam1conf[0].x0 + 1);
-  ysize = ( ircam1conf[0].y1 - ircam1conf[0].y0 + 1);
-  printf("x0 & x1  : %d & %d\n",ircam1conf[0].x0 , ircam1conf[0].x1);
-  printf("y0 & y1  : %d & %d\n",ircam1conf[0].y0 , ircam1conf[0].y1);
-    
+  xsize =  kcamconf[0].row1 - kcamconf[0].row0 + 1;
+  ysize = (kcamconf[0].col1 - kcamconf[0].col0) * 32 + 1;
+  printf("row0 & row1  : %d & %d\n",kcamconf[0].row0 , kcamconf[0].row1);
+  printf("col0 & col1  : %d & %d\n",kcamconf[0].col0 , kcamconf[0].col1);
+
   pdv_set_width(pdv_p, ysize);
   pdv_set_height(pdv_p, xsize);
     
-  width = pdv_get_width(pdv_p);
-  height = pdv_get_height(pdv_p);
-  depth = pdv_get_depth(pdv_p);
-  timeout = pdv_get_timeout(pdv_p);
+  width      = pdv_get_width(pdv_p);
+  height     = pdv_get_height(pdv_p);
+  depth      = pdv_get_depth(pdv_p);
+  timeout    = pdv_get_timeout(pdv_p);
   cameratype = pdv_get_cameratype(pdv_p);
   
   printf("image size  : %d x %d\n", width, height);
@@ -218,73 +216,80 @@ int main(int argc, char **argv) {
   shared = 1;
   // allocate space for 10 keywords
   NBkw = 10;
-  ImageStreamIO_createIm(&imarray[0], "ircam1", naxis, imsize, atype,
-						 shared, NBkw);
+  ImageStreamIO_createIm(&imarray[0], "kcam", naxis, imsize, atype,
+			 shared, NBkw);
   free(imsize);
     
   // Add keywords
   kw = 0;
   strcpy(imarray[0].kw[kw].name, "tint");
   imarray[0].kw[kw].type = 'D';
-  imarray[0].kw[kw].value.numf = ircam1conf[0].tint;
+  imarray[0].kw[kw].value.numf = kcamconf[0].tint;
   strcpy(imarray[0].kw[kw].comment, "exposure time");
 
   kw = 1;
   strcpy(imarray[0].kw[kw].name, "fps");
   imarray[0].kw[kw].type = 'D';
-  imarray[0].kw[kw].value.numf = ircam1conf[0].fps;
+  imarray[0].kw[kw].value.numf = kcamconf[0].fps;
   strcpy(imarray[0].kw[kw].comment, "frame rate");
   
   kw = 2;
   strcpy(imarray[0].kw[kw].name, "NDR");
   imarray[0].kw[kw].type = 'L';
-  imarray[0].kw[kw].value.numl = ircam1conf[0].NDR;
+  imarray[0].kw[kw].value.numl = kcamconf[0].NDR;
   strcpy(imarray[0].kw[kw].comment, "NDR");
   
   kw = 3;
-  strcpy(imarray[0].kw[kw].name, "x0");
+  strcpy(imarray[0].kw[kw].name, "row0");
   imarray[0].kw[kw].type = 'L';
-  imarray[0].kw[kw].value.numl = ircam1conf[0].x0;
-  strcpy(imarray[0].kw[kw].comment, "x0");
+  imarray[0].kw[kw].value.numl = kcamconf[0].row0;
+  strcpy(imarray[0].kw[kw].comment, "row0 (range 1-256)");
   
   kw = 4;
-  strcpy(imarray[0].kw[kw].name, "x1");
+  strcpy(imarray[0].kw[kw].name, "row1");
   imarray[0].kw[kw].type = 'L';
-  imarray[0].kw[kw].value.numl = ircam1conf[0].x1;
-  strcpy(imarray[0].kw[kw].comment, "x1");
+  imarray[0].kw[kw].value.numl = kcamconf[0].row1;
+  strcpy(imarray[0].kw[kw].comment, "row1 (range 1-256)");
   
   kw = 5;
-  strcpy(imarray[0].kw[kw].name, "y0");
+  strcpy(imarray[0].kw[kw].name, "col0");
   imarray[0].kw[kw].type = 'L';
-  imarray[0].kw[kw].value.numl = ircam1conf[0].y0;
-  strcpy(imarray[0].kw[kw].comment, "y0");
+  imarray[0].kw[kw].value.numl = kcamconf[0].col0;
+  strcpy(imarray[0].kw[kw].comment, "col0 (range 1-10)");
   
   kw = 6;
-  strcpy(imarray[0].kw[kw].name, "y1");
+  strcpy(imarray[0].kw[kw].name, "col1");
   imarray[0].kw[kw].type = 'L';
-  imarray[0].kw[kw].value.numl = ircam1conf[0].y1;
-  strcpy(imarray[0].kw[kw].comment, "y1");
+  imarray[0].kw[kw].value.numl = kcamconf[0].col1;
+  strcpy(imarray[0].kw[kw].comment, "col1 (range 1-10)");
 
   kw = 7;
   strcpy(imarray[0].kw[kw].name, "temp");
   imarray[0].kw[kw].type = 'D';
-  imarray[0].kw[kw].value.numf = ircam1conf[0].temperature;
+  imarray[0].kw[kw].value.numf = kcamconf[0].temperature;
   strcpy(imarray[0].kw[kw].comment, "detector temperature");
   
-  
-  fflush(stdout);
+  kw = 8;
+  strcpy(imarray[0].kw[kw].name, "mode");
+  imarray[0].kw[kw].type = 'S';
+  strcpy(imarray[0].kw[kw].value.valstr, kcamconf[0].mode);
+  //imarray[0].kw[kw].value.numf = kcamconf[0].mo;
+  strcpy(imarray[0].kw[kw].comment, "readout mode");
 
-  pdv_set_exposure(pdv_p, exposure);
-		
+  // other keywords to add?
+  // - timestamp
+  // - gain
+
+  fflush(stdout);
+  
   /*
    * allocate four buffers for optimal pdv ring buffer pipeline (reduce if
    * memory is at a premium)
    */
   pdv_multibuf(pdv_p, numbufs);
-
+  
   printf("reading %d image%s from '%s'\nwidth %d height %d depth %d\n",
 		 loops, loops == 1 ? "" : "s", cameratype, width, height, depth);
-  printf("exposure = %f\n", exposure);
   
   // imageushort = (unsigned short *) malloc(sizeof(unsigned short)*width*height);
 
@@ -295,127 +300,131 @@ int main(int argc, char **argv) {
    * images or that take a serial command to start every image) don't
    * tolerate queueing of multiple images
    */
+
   if (pdv_p->dd_p->force_single) {
-	pdv_start_image(pdv_p);
-	started = 1;
+    pdv_start_image(pdv_p);
+    started = 1;
   }
   else {
-	pdv_start_images(pdv_p, numbufs);
-	started = numbufs;
+    pdv_start_images(pdv_p, numbufs);
+    started = numbufs;
   }
   printf("\n");
   i = 0;
+
   int loopOK = 1;
+
   while(loopOK == 1) {
-	imarray[0].kw[0].value.numf = ircam1conf[0].tint;
-	imarray[0].kw[1].value.numf = ircam1conf[0].fps;
-	imarray[0].kw[2].value.numl = ircam1conf[0].NDR;
-	imarray[0].kw[7].value.numf = ircam1conf[0].temperature;
-	/*
-	 * get the image and immediately start the next one (if not the last
-	 * time through the loop). Processing (saving to a file in this case)
-	 * can then occur in parallel with the next acquisition
-	 */
-	
-	image_p = pdv_wait_image(pdv_p);
-	
-	if ((overrun = (edt_reg_read(pdv_p, PDV_STAT) & PDV_OVERRUN)))
-	  ++overruns;
 
-	pdv_start_image(pdv_p);
-	timeouts = pdv_timeouts(pdv_p);
+    // update shared memory keywords that can be updated without restart
+    imarray[0].kw[0].value.numf = kcamconf[0].tint;
+    imarray[0].kw[1].value.numf = kcamconf[0].fps;
+    imarray[0].kw[2].value.numl = kcamconf[0].NDR;
+    imarray[0].kw[7].value.numf = kcamconf[0].temperature;
 
-	/*
-	 * check for timeouts or data overruns -- timeouts occur when data
-	 * is lost, camera isn't hooked up, etc, and application programs
-	 * should always check for them. data overruns usually occur as a
-	 * result of a timeout but should be checked for separately since
-	 * ROI can sometimes mask timeouts
-	 */
-	if (timeouts > last_timeouts) {
-	  /*
-	   * pdv_timeout_cleanup helps recover gracefully after a timeout,
-	   * particularly if multiple buffers were prestarted
-	   */
-	  pdv_timeout_restart(pdv_p, TRUE);
-	  last_timeouts = timeouts;
-	  recovering_timeout = TRUE;
-	  printf("\ntimeout....\n");
-	}
-	else if (recovering_timeout) {
-	  pdv_timeout_restart(pdv_p, TRUE);
-	  recovering_timeout = FALSE;
-	  printf("\nrestarted....\n");
-	}
-        
-	// printf("line = %d\n", __LINE__);
-	fflush(stdout);
-        
-	if(SAVEBMP == 1) {
-	  if (*bmpfname)
-		save_image(image_p, width, height, depth, bmpfname, (loops > 1?i:-1));
-	}
-            
-	imageushort = (unsigned short *) image_p;
-            
-	fflush(stdout);
+    /*
+     * get the image and immediately start the next one (if not the last
+     * time through the loop). Processing (saving to a file in this case)
+     * can then occur in parallel with the next acquisition
+     */
     
-	imarray[0].md[0].write = 1; // set this flag to 1 when writing data
-            
-	fflush(stdout);
+    image_p = pdv_wait_image(pdv_p);
     
-	printf("w h = %d %d\n", width, height);
+    if ((overrun = (edt_reg_read(pdv_p, PDV_STAT) & PDV_OVERRUN)))
+      ++overruns;
     
-	memcpy(imarray[0].array.UI16, imageushort,
-		   sizeof(unsigned short)*width*height);
-
+    pdv_start_image(pdv_p);
+    timeouts = pdv_timeouts(pdv_p);
+    
+    /*
+     * check for timeouts or data overruns -- timeouts occur when data
+     * is lost, camera isn't hooked up, etc, and application programs
+     * should always check for them. data overruns usually occur as a
+     * result of a timeout but should be checked for separately since
+     * ROI can sometimes mask timeouts
+     */
+    if (timeouts > last_timeouts) {
+      /*
+       * pdv_timeout_cleanup helps recover gracefully after a timeout,
+       * particularly if multiple buffers were prestarted
+       */
+      pdv_timeout_restart(pdv_p, TRUE);
+      last_timeouts = timeouts;
+      recovering_timeout = TRUE;
+      printf("\ntimeout....\n");
+    }
+    else if (recovering_timeout) {
+      pdv_timeout_restart(pdv_p, TRUE);
+      recovering_timeout = FALSE;
+      printf("\nrestarted....\n");
+    }
+    
+    // printf("line = %d\n", __LINE__);
+    fflush(stdout);
+    
+    if(SAVEBMP == 1) {
+      if (*bmpfname)
+	save_image(image_p, width, height, depth, bmpfname, (loops > 1?i:-1));
+    }
+    
+    imageushort = (unsigned short *) image_p;
+    
+    fflush(stdout);
+    
+    imarray[0].md[0].write = 1; // set this flag to 1 when writing data
+    
+    fflush(stdout);
+    
+    printf("w h = %d %d\n", width, height);
+    
+    memcpy(imarray[0].array.UI16, imageushort,
+	   sizeof(unsigned short)*width*height);
+    
+    
+    fflush(stdout);
+    
+    imarray[0].md[0].write = 0;
+    // POST ALL SEMAPHORES
+    ImageStreamIO_sempost(&imarray[0], -1);
+    
+    printf("line = %d\n", __LINE__);
+    fflush(stdout);
+    
+    imarray[0].md[0].write = 0; // Done writing data
+    imarray[0].md[0].cnt0++;
+    imarray[0].md[0].cnt1++;
+    
+    fflush(stdout);
         
-	fflush(stdout);
-        
-	imarray[0].md[0].write = 0;
-	// POST ALL SEMAPHORES
-	ImageStreamIO_sempost(&imarray[0], -1);
-
-	printf("line = %d\n", __LINE__);
-	fflush(stdout);
-	
-	imarray[0].md[0].write = 0; // Done writing data
-	imarray[0].md[0].cnt0++;
-	imarray[0].md[0].cnt1++;
-	
-       
-	fflush(stdout);
- 
-        
-	value_ave = 0.0;
-	for (pix=0; pix < width*height; pix++)
-	  value_ave += imageushort[pix];
-	value_ave /= width*height;
-	ircam1conf[0].frameindex = i;
-	printf("\r image %10d   Average value = %20lf         ", i, value_ave);
-	
-	i++;
-	if (i==loops)
-	  loopOK = 0;
-	
-	fflush(stdout);
- 
+    value_ave = 0.0;
+    for (pix=0; pix < width*height; pix++)
+      value_ave += imageushort[pix];
+    value_ave /= width*height;
+    kcamconf[0].frameindex = i;
+    printf("\r image %10d   Average value = %20lf         ", i, value_ave);
+    
+    i++;
+    if (i==loops)
+      loopOK = 0;
+    
+    fflush(stdout);
+    
   }
   puts("");
-
+  
   printf("%d images %d timeouts %d overruns\n", loops, last_timeouts, overruns);
-
+  
   /*
    * if we got timeouts it indicates there is a problem
    */
   if (last_timeouts) printf("check camera and connections\n");
   pdv_close(pdv_p);
-
+  
   if (overruns || timeouts) exit(2);
-
+  
   //free(imageushort);
   free(imarray);
-    
+  
   exit(0);
 }
 

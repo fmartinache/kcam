@@ -30,8 +30,8 @@ int print_help() {
   printf("%s", line);
   printf(fmt, "help", "", "lists commands");
   printf(fmt, "quit", "", "exit server");
-  printf(fmt, "test", "", "serial comm test");
   printf(fmt, "exit", "", "exit server");
+  printf(fmt, "RAW",  "", "serial comm test (expert mode)");
   printf("%s", line);
   printf("%s", "\033[00m");
 }
@@ -40,7 +40,7 @@ int print_help() {
  *                  read pdv command line response
  * ========================================================================= */
 int readpdvcli(EdtDev *ed, char *outbuf) {
-  int ret = 0;
+  int     ret = 0;
   u_char  lastbyte, waitc;
   int     length=0;
 	
@@ -72,9 +72,13 @@ int readpdvcli(EdtDev *ed, char *outbuf) {
  * ========================================================================= */
 int server_command(EdtDev *ed, const char *cmd) {
   char tmpbuf[SERBUFSIZE];
-  sprintf(tmpbuf, "%s", cmd);
+  char outbuf[2000];
 
-  printf("the command is %s\n", tmpbuf);
+  readpdvcli(ed, outbuf);
+  sprintf(tmpbuf, "%s\r", cmd);
+  pdv_serial_command(ed, tmpbuf);
+  if (verbose)
+    printf("command: %s", tmpbuf);
   return 0;
 }
 
@@ -87,14 +91,16 @@ int main() {
   char auxstring[200];
   char str0[20];
   char str1[20];
-
+  char *copy;
+  char *token;
+  
   int cmdOK = 0;
   EdtDev *ed;
-  int unit = 0;
+  int unit = 0; // 1 for ircam1
   int channel = 0;
   int baud = 115200;
   int timeout = 0;
-  char outbuf[2000];	
+  char outbuf[2000];
 
   // --------------- initialize data structures -----------------
   
@@ -123,10 +129,11 @@ int main() {
       }
     
     if (cmdOK == 0)
-      if (strncmp(cmdstring, "rawcmd", strlen("rawcmd")) == 0) {
-	sscanf(cmdstring, "%s %s", str0, str1);
+      if (strncmp(cmdstring, "RAW", strlen("RAW")) == 0) {
+	copy = strdup(cmdstring);
+	token = strsep(&copy, " ");
+	server_command(ed, copy);
 	readpdvcli(ed, outbuf);
-	server_command(ed, str1);
 	printf("outbuf: %s\n", outbuf);
 	cmdOK = 1;
       }
