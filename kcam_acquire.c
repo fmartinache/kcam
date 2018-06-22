@@ -49,7 +49,7 @@ static void save_image(u_char * image_p, int width, int height, int depth,
 // ============================================================================
 int main(int argc, char **argv) {
   int     i;
-  int     unit = 0;
+  int     unit = 1;
   int     overrun, overruns=0;
   int     timeout;
   int     timeouts, last_timeouts = 0;
@@ -155,22 +155,10 @@ int main(int argc, char **argv) {
    * 
    * EDT_INTERFACE is defined in edtdef.h (included via edtinc.h)
    *
-   * edt_parse_unit_channel and pdv_open_channel) are equivalent to
-   * edt_parse_unit and pdv_open except for the extra channel arg and
-   * would normally be 0 unless there's another camera (or simulator)
-   * on the second channel (camera link) or daisy-chained RCI (PCI FOI)
    */
   
 
-  if (edt_devname[0]) {
-    unit = edt_parse_unit_channel(edt_devname, edt_devname,
-				  EDT_INTERFACE, &channel);
-  }
-  else {
-    strcpy(edt_devname, EDT_INTERFACE);
-  }
-  
-  if ((pdv_p = pdv_open_channel(edt_devname, unit, channel)) == NULL) {
+  if ((pdv_p = pdv_open_channel(EDT_INTERFACE, unit, channel)) == NULL) {
     sprintf(errstr, "pdv_open_channel(%s%d_%d)", edt_devname, unit, channel);
     pdv_perror(errstr);
     return (1);
@@ -192,8 +180,8 @@ int main(int argc, char **argv) {
   printf("row0 & row1  : %d & %d\n",kcamconf[0].row0 , kcamconf[0].row1);
   printf("col0 & col1  : %d & %d\n",kcamconf[0].col0 , kcamconf[0].col1);
 
-  pdv_set_width(pdv_p, ysize);
-  pdv_set_height(pdv_p, xsize);
+  //pdv_set_width(pdv_p, ysize);
+  //pdv_set_height(pdv_p, xsize);
     
   width      = pdv_get_width(pdv_p);
   height     = pdv_get_height(pdv_p);
