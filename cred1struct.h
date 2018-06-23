@@ -8,10 +8,11 @@ typedef struct {
   int FGchannel;          // frame grabber channel 
   float tint;             // integration time for each read	
   int   NDR;              // number of reads per reset	
+  char readmode[16];      // readout mode
+  float temperature;      // current cryostat temperature
+  float maxFps;           // maximum frame rate
   float fps;              // current number of frames in Hz
-  char mode[16];          // readout mode
-  float temperature;
-	  
+  float gain;             // 
   // cropping parameters
   int cropmode;          // 0: OFF, 1: ON
   int row0; // range 1 - 256 (granularity = 1)

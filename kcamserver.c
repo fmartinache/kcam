@@ -14,7 +14,7 @@
 #define CMDBUFSIZE 200
 static char buf[SERBUFSIZE+1];
 
-int verbose = 1;
+int verbose = 0;
 
 CRED1STRUCT *kcamconf;
 
@@ -31,10 +31,23 @@ int print_help() {
   printf("%s", line);
   printf(fmt, "command", "parameters", "description");
   printf("%s", line);
+  printf(fmt, "status", "",        "ready, isbeingcooled, standby, ...");
+  printf(fmt, "stop",  "",         "stop the acquisition");
+  printf(fmt, "start", "",         "start the acquisition (inf. loop)");
+  printf(fmt, "gmode", "",         "get current camera readout mode");
+  printf(fmt, "smode", "readmode", "set camera readout mode");
+  printf(fmt, "ggain", "",         "get detector gain");
+  printf(fmt, "sgain", "[gain]",   "set detector gain");
+  printf(fmt, "gtint", "",         "get exposure time (u-second)");
+  printf(fmt, "stint", "[tint]",   "set exposure time (u-second)");
+  printf(fmt, "gtemp", "",         "get cryo temperature");
+  printf(fmt, "gfpsmax", "",       "get max fps available (Hz)");
+  printf(fmt, "gfps", "",          "get current fps (Hz)");
+  printf(fmt, "sfps", "[fps]",     "set new fps (Hz)");
+  //printf(fmt, "", "", "");
+  printf("%s", line);
   printf(fmt, "help",  "", "lists commands");
   printf(fmt, "quit",  "", "exit server");
-  printf(fmt, "stop",  "", "stop the acquisition");
-  printf(fmt, "start", "", "start the acquisition (inf. loop)");
   printf(fmt, "exit",  "", "exit server");
   printf(fmt, "RAW",   "CRED1 command", "serial comm test (expert mode)");
   printf("%s", line);
@@ -115,13 +128,15 @@ int main() {
   
   int cmdOK = 0;
   EdtDev *ed;
-  int unit = 0; // 1 for kcam
+  int unit = 1; // 1 for kcam
   int chn = 0;
   int baud = 115200;
   int timeout = 0;
   char outbuf[2000];
   float fval = 0.0; // float value return
   float ival = 0; // integer value return
+  int acq_is_on = 0;
+  int acq_was_on = 0;
 
   printf("%s", "\033[01;32m");
   printf("--------------------------------------------------------\n");
@@ -144,7 +159,7 @@ int main() {
   printCRED1STRUCT(0);
 
   // -------------- open a handle to the device -----------------
-  ed = pdv_open_channel(EDT_INTERFACE, chn, chn);
+  ed = pdv_open_channel(EDT_INTERFACE, unit, chn);
   if (ed == NULL) {
     pdv_perror(EDT_INTERFACE);
     return -1;
@@ -162,19 +177,39 @@ int main() {
     fgets(cmdstring, CMDBUFSIZE, stdin);
     
     // ------------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    if (cmdOK == 0) // -------- STATUS ---------
+      if (strncmp(cmdstring, "status", strlen("status")) == 0) {
+	sprintf(serialcmd, "status raw");
+	server_command(ed, serialcmd);
+	readpdvcli(ed, outbuf);
+	sscanf(outbuf, "%s", str0);
+	printf("status: \033[01;31m%s\033[00m\n", str0);
+	cmdOK = 1;
+      }
+
+    // ------------------------------------------------------------------------
     //                        ACQUISITION CONTROL
     // ------------------------------------------------------------------------
     if (cmdOK == 0)
       if (strncmp(cmdstring, "stop", strlen("stop")) == 0) {
-	system("tmux send-keys -t kcamrun 'echo STOP acquire' C-m");
-	//system("tmux send-keys -t kcamrun C-c");
+	if (acq_was_on == 1) {
+	  system("tmux send-keys -t kcamrun 'echo STOP acquire' C-m");
+	  //system("tmux send-keys -t kcamrun C-c");
+	  acq_is_on = 0;
+	  acq_was_on = 0;
+	}
 	cmdOK = 1;
       }
 
     if (cmdOK == 0)
       if (strncmp(cmdstring, "start", strlen("start")) == 0) {
-	//system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
-	system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
+	if (acq_is_on == 0) {
+	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
+	  system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
+	  acq_is_on = 1;
+	  acq_was_on = 1;
+	}
 	cmdOK = 1;
       }
 
@@ -202,12 +237,20 @@ int main() {
 	// is requested readout mode valid?
 	if (strncmp(str1, "globalresetsingle", strlen("globalresetsingle")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "globalresetsingle");
-	  //system("tmux send-keys -t kcamrun C-c");
-	  //server_command(ed, serialcmd);
-	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
+	  if (acq_is_on == 1) {
+	    //system("tmux send-keys -t kcamrun C-c");
+	    acq_was_on = 1;
+	  }
+	  server_command(ed, serialcmd);
+	  if (acq_was_on == 1)
+	    system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
+
 	  printf("%s\n", serialcmd); // temp. information
 	  sprintf(kcamconf[chn].readmode, "global_single");
 	}
+	
+	// ---------------
+	// ---------------
 
 	else if (strncmp(str1, "globalresetcds", strlen("globalresetcds")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "globalresetscds");
@@ -218,14 +261,20 @@ int main() {
 	  sprintf(kcamconf[chn].readmode, "global_cds");
 	}
 
+	// ---------------
+	// ---------------
+
 	else if (strncmp(str1, "rollingresetcds", strlen("rollingresetcds")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "rollingresetscds");
 	  //system("tmux send-keys -t kcamrun C-c");
 	  //server_command(ed, serialcmd);
 	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
 	  printf("%s\n", serialcmd); // temp. information
-	  sprintf(kcamconf[chn].readmode, "global_cds");
+	  sprintf(kcamconf[chn].readmode, "rolling_cds");
 	}
+
+	// ---------------
+	// ---------------
 
 	else {
 	  printf("readmode: \033[01;31m%s\033[00m is not possible\n", str1);
@@ -262,7 +311,7 @@ int main() {
       if (strncmp(cmdstring, "gtint", strlen("gtint")) == 0) {
 	sprintf(serialcmd, "fps raw");
 	kcamconf[0].fps = server_query_float(ed, serialcmd);
-	fval = 1000.0/fval; // from FPS to exposure time
+	fval = 1000.0/kcamconf[0].fps; // from FPS to exposure time
 	printf("exposure time is: \033[01;31m%f\033[00m\n", fval);
 	kcamconf[0].tint = fval;
 	cmdOK = 1;
@@ -281,6 +330,17 @@ int main() {
 	cmdOK = 1;
 	}
     
+    // ------------------------------------------------------------------------
+    //                            COOLING INFO
+    // ------------------------------------------------------------------------
+    if (cmdOK == 0) // ------- get cryo temperature --------
+      if (strncmp(cmdstring, "gtemp", strlen("gtemp")) == 0) {
+	sprintf(serialcmd, "temperatures cryostat diode raw");
+	kcamconf[0].temperature = server_query_float(ed, serialcmd);
+	printf("cryo temp: \033[01;31m%f\033[00m\n", kcamconf[0].temperature);
+	cmdOK = 1;
+      }
+
     // ------------------------------------------------------------------------
     //                            FRAME RATE
     // ------------------------------------------------------------------------
@@ -318,6 +378,15 @@ int main() {
     // ------------------------------------------------------------------------
     //                         CONVENIENCE TOOLS
     // ------------------------------------------------------------------------
+    if (cmdOK == 0) // -------- get NDR ---------
+      if (strncmp(cmdstring, "gNDR", strlen("gNDR")) == 0) {
+	sprintf(serialcmd, "nbreadworeset raw");
+	kcamconf[0].NDR = server_query_float(ed, serialcmd);
+	printf("fps: \033[01;31m%d\033[00m\n", kcamconf[0].NDR);
+	cmdOK = 1;
+      }
+
+
     if (cmdOK == 0)
       if (strncmp(cmdstring, "RAW", strlen("RAW")) == 0) {
 	copy = strdup(cmdstring);
