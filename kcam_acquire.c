@@ -111,6 +111,12 @@ int main(int argc, char **argv) {
       SAVEBMP = 1;
       break;
       
+    case 'u':
+      ++argv;
+      --argc;
+      printf("I know.\n");
+      break;
+
     case 'l': // ------------------------------------------------------
       ++argv;
       --argc;
@@ -119,6 +125,7 @@ int main(int argc, char **argv) {
       }
       if ((argv[0][0] >= '0') && (argv[0][0] <= '9')) {
 	loops = atoi(argv[0]);
+	printf("Requested %d images!\n", loops);
       }
       else {
 	usage(progname, "Error: option 'l' requires a numeric argument\n");
@@ -363,12 +370,9 @@ int main(int argc, char **argv) {
     imarray[0].md[0].write = 1; // set this flag to 1 when writing data
     
     fflush(stdout);
-    
-    printf("w h = %d %d\n", width, height);
-    
+        
     memcpy(imarray[0].array.UI16, imageushort,
 	   sizeof(unsigned short)*width*height);
-    
     
     fflush(stdout);
     
@@ -376,8 +380,8 @@ int main(int argc, char **argv) {
     // POST ALL SEMAPHORES
     ImageStreamIO_sempost(&imarray[0], -1);
     
-    printf("line = %d\n", __LINE__);
-    fflush(stdout);
+    //printf("line = %d\n", __LINE__);
+    //fflush(stdout);
     
     imarray[0].md[0].write = 0; // Done writing data
     imarray[0].md[0].cnt0++;
@@ -390,7 +394,8 @@ int main(int argc, char **argv) {
       value_ave += imageushort[pix];
     value_ave /= width*height;
     kcamconf[0].frameindex = i;
-    printf("\r image %10d   Average value = %20lf         ", i, value_ave);
+    printf("\r image %10d   Average value = %20lf w h = %d %d", 
+	   i, value_ave, width, height);
     
     i++;
     if (i==loops)

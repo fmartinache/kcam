@@ -210,6 +210,17 @@ int main() {
       }
 
     if (cmdOK == 0)
+      if (strncmp(cmdstring, "take5", strlen("take5")) == 0) {
+	if (acq_is_on == 0) {
+	  //system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
+	  system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 5\" C-m");
+	  //acq_is_on = 1;
+	  //acq_was_on = 1;
+	}
+	cmdOK = 1;
+      }
+
+    if (cmdOK == 0)
       if (strncmp(cmdstring, "start", strlen("start")) == 0) {
 	if (acq_is_on == 0) {
 	  //system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
@@ -314,14 +325,14 @@ int main() {
       if (strncmp(cmdstring, "ggain", strlen("ggain")) == 0) {
 	sprintf(serialcmd, "gain raw");
 	kcamconf[0].gain = server_query_float(ed, serialcmd);
-	printf("max fps: \033[01;31m%f\033[00m\n", kcamconf[chn].gain);
+	printf("gain: \033[01;31m%f\033[00m\n", kcamconf[chn].gain);
 	cmdOK = 1;
       }
 
     if (cmdOK == 0) // ------- set gain --------
       if (strncmp(cmdstring, "sgain", strlen("sgain")) == 0) {
 	sscanf(cmdstring, "%s %f", str0, &fval);
-	sprintf(serialcmd, "set fps %f", fval);
+	sprintf(serialcmd, "set gain %f", fval);
 	server_command(ed, serialcmd);
 	kcamconf[chn].gain = fval;
 	cmdOK = 1;
