@@ -50,6 +50,7 @@ static void save_image(u_char * image_p, int width, int height, int depth,
 int main(int argc, char **argv) {
   int     i;
   int     unit = 1;
+  int     channel = 0;
   int     overrun, overruns=0;
   int     timeout;
   int     timeouts, last_timeouts = 0;
@@ -65,7 +66,7 @@ int main(int argc, char **argv) {
   int     loops = 1;
   int     width, height, depth;
   char    edt_devname[128];
-  int     channel = 0;
+
   
   unsigned short int *imageushort;
   double value_ave;
@@ -260,7 +261,7 @@ int main(int argc, char **argv) {
   kw = 8;
   strcpy(imarray[0].kw[kw].name, "mode");
   imarray[0].kw[kw].type = 'S';
-  strcpy(imarray[0].kw[kw].value.valstr, kcamconf[0].mode);
+  strcpy(imarray[0].kw[kw].value.valstr, kcamconf[0].readmode);
   //imarray[0].kw[kw].value.numf = kcamconf[0].mo;
   strcpy(imarray[0].kw[kw].comment, "readout mode");
 

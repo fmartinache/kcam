@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include "edtinc.h"             // for EDT PCI board
 #include "cred1struct.h"        // CREDSTRUCT data structure
 
@@ -32,8 +34,11 @@ int print_help() {
   printf(fmt, "command", "parameters", "description");
   printf("%s", line);
   printf(fmt, "status", "",        "ready, isbeingcooled, standby, ...");
-  printf(fmt, "stop",  "",         "stop the acquisition");
   printf(fmt, "start", "",         "start the acquisition (inf. loop)");
+  printf(fmt, "stop",  "",         "stop the acquisition");
+  printf(fmt, "shutdown", "",      "stops the camera!");
+  printf("%s", line);
+  printf(fmt, "tags", "",          "turns image tagging on/off");
   printf(fmt, "gmode", "",         "get current camera readout mode");
   printf(fmt, "smode", "readmode", "set camera readout mode");
   printf(fmt, "ggain", "",         "get detector gain");
@@ -108,6 +113,7 @@ float server_query_float(EdtDev *ed, const char *cmd) {
   float fval;
 
   server_command(ed, cmd);
+  usleep(100000);
   readpdvcli(ed, outbuf);
   sscanf(outbuf, "%f", &fval);
 
@@ -137,6 +143,7 @@ int main() {
   float ival = 0; // integer value return
   int acq_is_on = 0;
   int acq_was_on = 0;
+  int tagging = 0;
 
   printf("%s", "\033[01;32m");
   printf("--------------------------------------------------------\n");
@@ -194,8 +201,8 @@ int main() {
     if (cmdOK == 0)
       if (strncmp(cmdstring, "stop", strlen("stop")) == 0) {
 	if (acq_was_on == 1) {
-	  system("tmux send-keys -t kcamrun 'echo STOP acquire' C-m");
-	  //system("tmux send-keys -t kcamrun C-c");
+	  //system("tmux send-keys -t kcamrun 'echo STOP acquire' C-m");
+	  system("tmux send-keys -t kcamrun C-c");
 	  acq_is_on = 0;
 	  acq_was_on = 0;
 	}
@@ -205,8 +212,8 @@ int main() {
     if (cmdOK == 0)
       if (strncmp(cmdstring, "start", strlen("start")) == 0) {
 	if (acq_is_on == 0) {
-	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
-	  system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
+	  //system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
+	  system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
 	  acq_is_on = 1;
 	  acq_was_on = 1;
 	}
@@ -219,6 +226,23 @@ int main() {
     // ------------------------------------------------------------------------
     //                          READOUT MODE
     // ------------------------------------------------------------------------
+
+    if (cmdOK == 0) // ------- frame tagging --------
+      if (strncmp(cmdstring, "tags", strlen("tags")) == 0) {
+	if (tagging == 0) {
+	  sprintf(serialcmd, "set imagetags on");
+	  server_command(ed, serialcmd);
+	  tagging = 1;
+	  printf("tagging was turned on\n");
+	}
+	else {
+	  sprintf(serialcmd, "set imagetags off");
+	  server_command(ed, serialcmd);
+	  tagging = 0;
+	  printf("tagging was turned off\n");
+	}
+	cmdOK = 1;
+      }
 
     if (cmdOK == 0) // ------- get readout mode --------
       if (strncmp(cmdstring, "gmode", strlen("gmode")) == 0) {
@@ -335,7 +359,7 @@ int main() {
     // ------------------------------------------------------------------------
     if (cmdOK == 0) // ------- get cryo temperature --------
       if (strncmp(cmdstring, "gtemp", strlen("gtemp")) == 0) {
-	sprintf(serialcmd, "temperatures cryostat diode raw");
+	sprintf(serialcmd, "temperature cryostat ptcontroller raw");
 	kcamconf[0].temperature = server_query_float(ed, serialcmd);
 	printf("cryo temp: \033[01;31m%f\033[00m\n", kcamconf[0].temperature);
 	cmdOK = 1;
