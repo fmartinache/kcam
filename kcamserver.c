@@ -157,6 +157,7 @@ int main() {
   int acq_is_on = 0;
   int acq_was_on = 0;
   int tagging = 0;
+  int row0, row1, col0, col1; // 
 
   printf("%s", "\033[01;32m");
   printf("--------------------------------------------------------\n");
@@ -243,11 +244,113 @@ int main() {
 	cmdOK = 1;
       }
 
-    // ------- cropping on ? ----------
-    // ------- cropping config --------
+    // ------------------------------------------------------------------------
+    //                          CROPPING MODE
+    // ------------------------------------------------------------------------
+    if (cmdOK == 0) // ------- get cropping mode --------
+      if (strncmp(cmdstring, "gcrop", strlen("gcrop")) == 0) {
+	sprintf(serialcmd, "cropping rows");
+	server_command(ed, serialcmd);
+	readpdvcli(ed, outbuf);
+	sscanf(outbuf, "rows: %d-%d", &row0, &row1);
+
+	sprintf(serialcmd, "cropping columns");
+	server_command(ed, serialcmd);
+	readpdvcli(ed, outbuf);
+	sscanf(outbuf, "columns: %d-%d", &col0, &col1);
+
+	kcamconf[chn].row0 = row0;
+	kcamconf[chn].row1 = row1;
+	kcamconf[chn].col0 = col0;
+	kcamconf[chn].col1 = col1;
+
+	printf("cropmode: \033[01;31mCOLS:%d-%d\033[00m\n", col0, col1);
+	printf("cropmode: \033[01;31mROWS:%d-%d\033[00m\n", row0, row1);
+	cmdOK = 1;
+      }
+
+
+    if (cmdOK == 0) // ------- set columns --------
+      if (strncmp(cmdstring, "scropcol", strlen("scropcol")) == 0) {
+	sscanf(cmdstring, "%s %d-%d", str0, &col0, &col1);
+
+	if ((0 <= col0) && (col0 <= 10) && (0 <= col1) && 
+	    (col1 <= 10) && (col0 < col1)) {
+	  
+	  sprintf(serialcmd, "set cropping columns %d-%d", col0, col1);
+	  if (acq_is_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher C-c");
+	    acq_was_on = 1;
+	  }
+	  server_command(ed, serialcmd);
+	  kcamconf[chn].col0 = col0;
+	  kcamconf[chn].col1 = col1;
+	  printCRED1STRUCT(0);
+	  
+	  if (acq_was_on == 1){
+	    system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	    acq_was_on = 0;
+	  }
+	  sprintf(loginfo, "%s", serialcmd);
+	  log_action(loginfo);
+	}
+	else {
+	  printf("Not a valid combination.\n");
+	}
+	cmdOK = 1;
+      }
+
+    if (cmdOK == 0) // ------- set rows --------
+      if (strncmp(cmdstring, "scroprow", strlen("scroprow")) == 0) {
+	sscanf(cmdstring, "%s %d-%d", str0, &row0, &row1);
+
+	if ((0 <= row0) && (row0 <= 256) && (0 <= row1) && 
+	    (row1 <= 256) && (row0 < row1)) {
+
+	  sprintf(serialcmd, "set cropping rows %d-%d", row0, row1);
+	  if (acq_is_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher C-c");
+	    acq_was_on = 1;
+	  }
+	  server_command(ed, serialcmd);
+	  kcamconf[chn].row0 = row0;
+	  kcamconf[chn].row1 = row1;
+	  printCRED1STRUCT(0);
+	  
+	  if (acq_was_on == 1){
+	    system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	    acq_was_on = 0;
+	  }
+	  sprintf(loginfo, "%s", serialcmd);
+	  log_action(loginfo);
+	}
+	else {
+	  printf("Not a valid combination.\n");
+	}
+	cmdOK = 1;
+      }
+
+    if (cmdOK == 0) // ------- set crop on/off --------
+      if (strncmp(cmdstring, "scrop ", strlen("scrop ")) == 0) {
+	sscanf(cmdstring, "%s %s", str0, str1);
+	sprintf(serialcmd, "set cropping %s", str1);
+	if (acq_is_on == 1) {
+	  system("tmux send-keys -t kcam_fetcher C-c");
+	  acq_was_on = 1;
+	}
+	server_command(ed, serialcmd);
+	
+	if (acq_was_on == 1){
+	  system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	  acq_was_on = 0;
+	}
+	sprintf(loginfo, "%s", serialcmd);
+	log_action(loginfo);
+	cmdOK = 1;
+      }
 
     // ------------------------------------------------------------------------
-    //                          READOUT MODE
+    //                            READOUT MODE
     // ------------------------------------------------------------------------
 
     if (cmdOK == 0) // ------- frame tagging --------
