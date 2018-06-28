@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>910</width>
-    <height>658</height>
+    <width>939</width>
+    <height>668</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -20,7 +20,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="PlotWidget" name="gView_ROI">
+   <widget class="PlotWidget" name="gView_shm">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -42,14 +42,19 @@
      </size>
     </property>
    </widget>
-   <widget class="QLabel" name="label_3">
+   <widget class="QLabel" name="lbl_stat">
     <property name="geometry">
      <rect>
       <x>360</x>
       <y>60</y>
-      <width>291</width>
+      <width>241</width>
       <height>261</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
     </property>
     <property name="frameShape">
      <enum>QFrame::Panel</enum>
@@ -58,16 +63,16 @@
      <number>3</number>
     </property>
     <property name="text">
-     <string>Information about the image. Is it saturating?</string>
+     <string/>
     </property>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>690</x>
+      <x>650</x>
       <y>160</y>
-      <width>181</width>
-      <height>51</height>
+      <width>261</width>
+      <height>68</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
@@ -119,13 +124,13 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="lbl_trautman">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>400</y>
-      <width>191</width>
-      <height>211</height>
+      <x>680</x>
+      <y>440</y>
+      <width>200</width>
+      <height>150</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -135,7 +140,7 @@
      <number>3</number>
     </property>
     <property name="text">
-     <string>Colonel Trautman</string>
+     <string/>
     </property>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget_2">
@@ -143,27 +148,30 @@
      <rect>
       <x>60</x>
       <y>20</y>
-      <width>239</width>
+      <width>242</width>
       <height>41</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
      <item row="0" column="0">
-      <widget class="QPushButton" name="pushButton_2">
+      <widget class="QPushButton" name="pB_start">
        <property name="text">
         <string>start</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton_3">
+      <widget class="QPushButton" name="pB_stop">
        <property name="text">
         <string>stop</string>
        </property>
       </widget>
      </item>
      <item row="0" column="2">
-      <widget class="QPushButton" name="pushButton_4">
+      <widget class="QPushButton" name="pB_standby">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>standby</string>
        </property>
@@ -174,9 +182,9 @@
    <widget class="QWidget" name="gridLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>670</x>
+      <x>630</x>
       <y>240</y>
-      <width>218</width>
+      <width>284</width>
       <height>80</height>
      </rect>
     </property>
@@ -220,10 +228,10 @@
    <widget class="QWidget" name="gridLayoutWidget_4">
     <property name="geometry">
      <rect>
-      <x>700</x>
+      <x>660</x>
       <y>40</y>
-      <width>160</width>
-      <height>81</height>
+      <width>176</width>
+      <height>92</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_4">
@@ -249,22 +257,22 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="comboBox"/>
+      <widget class="QComboBox" name="cB_rmode"/>
      </item>
      <item row="1" column="1">
-      <widget class="QSpinBox" name="spinBox"/>
+      <widget class="QSpinBox" name="spB_gain"/>
      </item>
      <item row="2" column="1">
-      <widget class="QSpinBox" name="spinBox_2"/>
+      <widget class="QSpinBox" name="spB_fps"/>
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="label_8">
+   <widget class="QLabel" name="lbl_log">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>380</y>
-      <width>611</width>
+      <width>581</width>
       <height>231</height>
      </rect>
     </property>
@@ -283,13 +291,13 @@
      <rect>
       <x>70</x>
       <y>330</y>
-      <width>189</width>
+      <width>237</width>
       <height>41</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_5">
      <item row="0" column="0">
-      <widget class="QPushButton" name="pushButton">
+      <widget class="QPushButton" name="pB_take_dark">
        <property name="text">
         <string>Take Dark</string>
        </property>
@@ -310,8 +318,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>910</width>
-     <height>20</height>
+     <width>939</width>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

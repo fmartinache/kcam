@@ -1,0 +1,185 @@
+#!/usr/bin/env python
+
+from xaosim.QtMain import QtMain, QApplication
+from PyQt4 import QtCore, QtGui, uic
+from PyQt4.QtCore import QThread
+from PyQt4.QtGui import QLabel, QImage
+
+import threading
+
+import pyqtgraph as pg
+import sys
+import numpy as np
+from numpy.linalg import solve
+from xaosim.scexao_shmlib import shm
+import matplotlib.cm as cm
+
+import os
+import shutil
+import platform
+
+import Image
+
+# =====================================================================
+home = os.getenv('HOME')
+conf_dir = home+'/.config/kcam/'
+
+# =====================================================================
+# =====================================================================
+myqt = 0 # to have myqt as a global variable
+
+def main():
+    global myqt
+    myqt = QtMain()
+    gui = MyWindow()
+    myqt.mainloop()
+    myqt.gui_quit()
+    sys.exit()
+
+tdir = "/home/scexao/frantz/CRED1/KCAM/kcam/"
+
+# ------------------------------------------------------------------
+#               short-hand for tmux commands
+# ------------------------------------------------------------------
+def tmux(cargs="", session="kcam_server", command="send-keys"):
+    ''' ------------------------------------------------------------
+    Synthesizes and sends a tmux command. The default option was
+    chosen to match the most common one, hence making the code
+    below more concise.
+    ------------------------------------------------------------ '''
+    if cargs == "":
+        os.system("tmux %s -t %s" % (command, session))
+    else:
+        os.system("tmux %s -t %s '%s' Enter" % (command, session, cargs))
+
+# ------------------------------------------------------------------
+#                         camera command
+# ------------------------------------------------------------------
+def camera_cmd(cmd):
+    tmux(session="kcam_server", cargs=cmd)
+
+# =====================================================================
+#                               Tools 
+# =====================================================================
+def arr2im(arr, vmin=False, vmax=False, pwr=1.0, cmap=None, gamma=1.0):
+    ''' ------------------------------------------
+    convert numpy array into image for display
+
+    limits dynamic range, power coefficient and
+    applies colormap
+    ------------------------------------------ '''
+    arr2 = arr.astype('float')
+    if vmin is False:
+        mmin = arr2.min()
+    else:
+        mmin = vmin
+
+    if vmax is False:
+        mmax = arr2.max()
+    else:
+        mmax = vmax
+
+    arr2 -= mmin
+    if mmax != mmin:
+        arr2 /= (mmax-mmin)
+
+    arr2 = arr2**pwr
+
+    if cmap == None:
+        mycmap = cm.jet
+    else:
+        mycmap = cmap
+
+    res = mycmap(arr2)
+    res[:,:,3] = gamma
+    return(res)
+
+
+# =====================================================================
+#                          Main GUI object
+# =====================================================================
+args = sys.argv[1:]
+
+class MyWindow(QtGui.QMainWindow):
+    ''' ------------------------------------------------------
+    This is the meat of the program: the class that drives
+    the GUI.
+    ------------------------------------------------------ '''
+    def __init__(self):
+        self.mySHM = shm('/tmp/kcam.im.shm', verbose=False)
+        self.vmin  = 0#False
+        self.vmax  = 400#False
+        self.pwr   = 1.0
+        self.mycmap = cm.hot
+        self.live_counter = -1
+
+        super(MyWindow, self).__init__()
+        if not os.path.exists(conf_dir + '.ui'):
+            uic.loadUi('kcam_gui.ui', self)
+        else:
+            uic.loadUi(conf_dir + 'kcam_gui.ui', self)
+
+        self.pixmap = QtGui.QPixmap(conf_dir + 'Trautman.png')
+        self.lbl_trautman.setPixmap(self.pixmap)
+
+        # ==============================================
+        # prepare the display
+        # ==============================================
+        self.gView_shm.hideAxis('left')
+        self.gView_shm.hideAxis('bottom')
+
+        self.imv_data = pg.ImageItem()
+        self.overlay  = pg.GraphItem()
+        
+        self.gView_shm.addItem(self.imv_data)
+
+        self.pB_start.clicked.connect(self.start_fetch)
+        self.pB_stop.clicked.connect(self.stop_fetch)
+
+        # ==============================================
+        self.show()
+	self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.refresh_all)
+        self.timer.start(50)
+
+    # =========================================================
+    def closeEvent(self, event):
+        sys.exit()
+
+    # =========================================================
+    def refresh_img(self):
+        self.imv_data.setImage(arr2im(self.data_img.T,
+                                      vmin=self.vmin, vmax=self.vmax,
+                                      pwr=self.pwr,
+                                      cmap=self.mycmap), border=2)
+
+    # =========================================================
+    def refresh_all(self):
+        ''' ----------------------------------------------------------
+        Refresh the display
+        ---------------------------------------------------------- '''
+        
+        if self.live_counter < self.mySHM.get_counter():
+            self.data_img = self.mySHM.get_data(False, True)
+
+            self.data_img = self.data_img.astype(np.float)
+            self.live_counter = self.mySHM.get_counter()
+
+            self.refresh_img()
+            
+    # =========================================================
+    def start_fetch(self):
+        camera_cmd("start")
+        self.mySHM.close()
+        self.live_counter = -1
+        self.mySHM = shm('/tmp/kcam.im.shm', verbose=False)
+
+
+    # =========================================================
+    def stop_fetch(self):
+        camera_cmd("stop")
+
+# ==========================================================
+# ==========================================================
+if __name__ == "__main__":
+    main()

@@ -214,7 +214,7 @@ int main() {
     // ------------------------------------------------------------------------
     if (cmdOK == 0)
       if (strncmp(cmdstring, "stop", strlen("stop")) == 0) {
-	if (acq_was_on == 1) {
+	if (acq_is_on == 1) {
 	  system("tmux send-keys -t kcam_fetcher C-c");
 	  acq_is_on = 0;
 	  sprintf(loginfo, "%s", "image fetching interrupted");
@@ -406,7 +406,7 @@ int main() {
 	// ---------------
 
 	else if (strncmp(str1, "globalresetcds", strlen("globalresetcds")) == 0) {
-	  sprintf(serialcmd, "set mode %s", "globalresetscds");
+	  sprintf(serialcmd, "set mode %s", "globalresetcds");
 	  if (acq_is_on == 1) {
 	    system("tmux send-keys -t kcam_fetcher C-c");
 	    acq_was_on = 1;
