@@ -121,12 +121,25 @@ float server_query_float(EdtDev *ed, const char *cmd) {
 }
 
 /* =========================================================================
+ *                 log server interaction in a file
+ * ========================================================================= */
+
+// for now, this is just a print screen. But eventually, will log actions
+// with time-stamps into a file
+
+int log_action(char *msg) {
+  printf("%s\n", msg);
+}
+
+/* =========================================================================
  *                            Main program
  * ========================================================================= */
 int main() {
   char prompt[CMDBUFSIZE];
   char cmdstring[CMDBUFSIZE];
   char serialcmd[CMDBUFSIZE];
+  char loginfo[CMDBUFSIZE];
+
   char str0[20];
   char str1[20];
   char *copy;
@@ -201,10 +214,10 @@ int main() {
     if (cmdOK == 0)
       if (strncmp(cmdstring, "stop", strlen("stop")) == 0) {
 	if (acq_was_on == 1) {
-	  //system("tmux send-keys -t kcamrun 'echo STOP acquire' C-m");
-	  system("tmux send-keys -t kcamrun C-c");
+	  system("tmux send-keys -t kcam_fetcher C-c");
 	  acq_is_on = 0;
-	  acq_was_on = 0;
+	  sprintf(loginfo, "%s", "image fetching interrupted");
+	  log_action(loginfo);
 	}
 	cmdOK = 1;
       }
@@ -212,10 +225,9 @@ int main() {
     if (cmdOK == 0)
       if (strncmp(cmdstring, "take5", strlen("take5")) == 0) {
 	if (acq_is_on == 0) {
-	  //system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
-	  system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 5\" C-m");
-	  //acq_is_on = 1;
-	  //acq_was_on = 1;
+	  system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 5\" C-m");
+	  sprintf(loginfo, "%s", "fetching 5 images");
+	  log_action(loginfo);
 	}
 	cmdOK = 1;
       }
@@ -223,10 +235,10 @@ int main() {
     if (cmdOK == 0)
       if (strncmp(cmdstring, "start", strlen("start")) == 0) {
 	if (acq_is_on == 0) {
-	  //system("tmux send-keys -t kcamrun 'echo START acquire' C-m");
-	  system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
+	  system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	  sprintf(loginfo, "%s", "start fetching images");
+	  log_action(loginfo);
 	  acq_is_on = 1;
-	  acq_was_on = 1;
 	}
 	cmdOK = 1;
       }
@@ -273,15 +285,18 @@ int main() {
 	if (strncmp(str1, "globalresetsingle", strlen("globalresetsingle")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "globalresetsingle");
 	  if (acq_is_on == 1) {
-	    //system("tmux send-keys -t kcamrun C-c");
+	    system("tmux send-keys -t kcam_fetcher C-c");
 	    acq_was_on = 1;
 	  }
 	  server_command(ed, serialcmd);
-	  if (acq_was_on == 1)
-	    system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
-
-	  printf("%s\n", serialcmd); // temp. information
 	  sprintf(kcamconf[chn].readmode, "global_single");
+
+	  if (acq_was_on == 1){
+	    system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	    acq_was_on = 0;
+	  }
+	  sprintf(loginfo, "%s", serialcmd);
+	  log_action(loginfo);
 	}
 	
 	// ---------------
@@ -289,11 +304,19 @@ int main() {
 
 	else if (strncmp(str1, "globalresetcds", strlen("globalresetcds")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "globalresetscds");
-	  //system("tmux send-keys -t kcamrun C-c");
-	  //server_command(ed, serialcmd);
-	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
-	  printf("%s\n", serialcmd); // temp. information
+	  if (acq_is_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher C-c");
+	    acq_was_on = 1;
+	  }
+	  server_command(ed, serialcmd);
 	  sprintf(kcamconf[chn].readmode, "global_cds");
+
+	  if (acq_was_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	    acq_was_on = 0;
+	  }
+	  sprintf(loginfo, "%s", serialcmd);
+	  log_action(loginfo);
 	}
 
 	// ---------------
@@ -301,11 +324,19 @@ int main() {
 
 	else if (strncmp(str1, "rollingresetcds", strlen("rollingresetcds")) == 0) {
 	  sprintf(serialcmd, "set mode %s", "rollingresetscds");
-	  //system("tmux send-keys -t kcamrun C-c");
-	  //server_command(ed, serialcmd);
-	  //system("tmux send-keys -t kcamrun \"./kcam_acquire -u 1 -l 0\" C-m");
-	  printf("%s\n", serialcmd); // temp. information
+	  if (acq_is_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher C-c");
+	    acq_was_on = 1;
+	  }
+	  server_command(ed, serialcmd);
 	  sprintf(kcamconf[chn].readmode, "rolling_cds");
+
+	  if (acq_was_on == 1) {
+	    system("tmux send-keys -t kcam_fetcher \"./kcamfetch -u 1 -l 0\" C-m");
+	    acq_was_on = 0;
+	  }
+	  sprintf(loginfo, "%s", serialcmd);
+	  log_action(loginfo);
 	}
 
 	// ---------------
@@ -335,6 +366,8 @@ int main() {
 	sprintf(serialcmd, "set gain %f", fval);
 	server_command(ed, serialcmd);
 	kcamconf[chn].gain = fval;
+	sprintf(loginfo, "%s", serialcmd);
+	log_action(loginfo);
 	cmdOK = 1;
       }
 
@@ -362,6 +395,8 @@ int main() {
 
 	sprintf(serialcmd, "set fps %f", fval);
 	server_command(ed, serialcmd);
+	sprintf(loginfo, "%s", serialcmd);
+	log_action(loginfo);
 	cmdOK = 1;
 	}
     
@@ -407,6 +442,8 @@ int main() {
 	sscanf(outbuf, "%f", &fval);
 	printf("fps: \033[01;31m%f\033[00m\n", fval);
 	kcamconf[0].fps = fval;
+	sprintf(loginfo, "%s", serialcmd);
+	log_action(loginfo);
 	cmdOK = 1;
       }
 

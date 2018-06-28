@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+import os
+
+wdir = "/home/scexao/frantz/CRED1/KCAM/kcam/"
+
+# ------------------------------------------------------------------
+#               short-hand for tmux commands
+# ------------------------------------------------------------------
+def tmux(cargs="", session="kcam_server", command="send-keys"):
+    ''' ------------------------------------------------------------
+    Synthesizes and sends a tmux command. The default option was
+    chosen to match the most common one, hence making the code
+    below more concise.
+    ------------------------------------------------------------ '''
+    if cargs == "":
+        os.system("tmux %s -t %s" % (command, session))
+    else:
+        os.system("tmux %s -t %s '%s' Enter" % (command, session, cargs))
+
+# ------------------------------------------------------------------
+#                         camera command
+# ------------------------------------------------------------------
+def camera_cmd(cmd):
+    tmux(session="kcamserver", cargs=cmd)
+
+
+# ------------------------------------------------------------------
+#                         system setup
+# ------------------------------------------------------------------
+def init_setup():
+    # start and set-up the two required tmux sessions
+    os.system("tmux new-session -s 'kcam_server' -d")
+    os.system("tmux new-session -s 'kcam_fetcher' -d")
+
+    tmux(cargs="cd %s" % (wdir,))
+    tmux(session="kcam_fetcher", cargs="cd %s" % (wdir,))
+
+def start_server():
+    tmux(session="kcam_server", cargs="./kcamserver") # start the server!
+
+# ------------------------------------------------------------------
+#                          quit the system
+# ------------------------------------------------------------------
+def close_all():
+    tmux(cargs="stop") # stops the data fetch process
+    os.system("tmux kill-session -t 'kcam_fetcher'")
+    tmux(cargs="quit")
+    os.system("tmux kill-session -t 'kcam_server'")
+
+# ------------------------------------------------------------------
+# 
+# ------------------------------------------------------------------
+def standby_mode(mode=True):
+    if mode is True:
+        tmux(cargs="RAW set standby on")
+    else:
+        tmux(cargs="RAW set standby off")
+
+def fetch_data():
+    tmux(cargs="start")
+
