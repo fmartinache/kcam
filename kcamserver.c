@@ -316,7 +316,7 @@ int main() {
       if (strncmp(cmdstring, "scroprow", strlen("scroprow")) == 0) {
 		sscanf(cmdstring, "%s %d-%d", str0, &row0, &row1);
 		
-		if ((0 <= row0) && (row0 <= 256) && (0 <= row1) && 
+		if ((0 < row0) && (row0 <= 256) && (0 < row1) && 
 			(row1 <= 256) && (row0 < row1)) {
 		  
 		  sprintf(serialcmd, "set cropping rows %d-%d", row0, row1);
