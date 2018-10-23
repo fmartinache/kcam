@@ -30,6 +30,7 @@ def camera_cmd(cmd):
 # ------------------------------------------------------------------
 def init_setup():
     # start and set-up the two required tmux sessions
+    os.system("/opt/EDTpdv/initcam -u 1 -c 0 -f %s/cred1_FGSetup_16bit.cfg"%(wdir))
     os.system("tmux new-session -s 'kcam_server' -d")
     os.system("tmux new-session -s 'kcam_fetcher' -d")
 

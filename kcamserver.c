@@ -136,7 +136,7 @@ int log_action(char *msg) {
  * ========================================================================= */
 int go_fetcher(char *msg) {
   char cmd[256];
-  sprintf("tmux send-keys -t kcam_fetcher %s", msg)
+  sprintf(cmd, "tmux send-keys -t kcam_fetcher %s", msg);
   system(cmd);
 }
 
