@@ -39,8 +39,8 @@ int printCRED1STRUCT(int cam) {
   printf("%25s %3d-%3d\n", "cropping col", kcamconf[cam].col0, kcamconf[cam].col1);
   printf("%25s %3d x %3d\n", 
 	 "Resulting window",
-	 kcamconf[cam].row1 - kcamconf[cam].row0,
-	 (kcamconf[cam].col1 - kcamconf[cam].col0) * 32);
+	 kcamconf[cam].row1 - kcamconf[cam].row0 + 1,
+	 (kcamconf[cam].col1 - kcamconf[cam].col0 + 1) * 32);
   printf("%s", line);
   printf(cfmt, "readout mode", kcamconf[cam].readmode);
   printf("%s", line);

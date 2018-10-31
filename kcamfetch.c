@@ -144,8 +144,8 @@ int main(int argc, char **argv) {
   int shared;        // 1 if image in shared memory
   int NBkw;          // number of keywords supported
   sprintf(camname, "kcam");
-  xsize =  kcamconf[0].row1 - kcamconf[0].row0;
-  ysize = (kcamconf[0].col1 - kcamconf[0].col0) * 32;
+  xsize =  kcamconf[0].row1 - kcamconf[0].row0 + 1;
+  ysize = (kcamconf[0].col1 - kcamconf[0].col0 + 1) * 32;
   printf("row0 & row1  : %d & %d\n",kcamconf[0].row0 , kcamconf[0].row1);
   printf("col0 & col1  : %d & %d\n",kcamconf[0].col0 , kcamconf[0].col1);
 

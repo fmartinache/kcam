@@ -181,9 +181,9 @@ int main() {
   
   // --------------- initialize data structures -----------------
   initCRED1STRUCT();
-  kcamconf[chn].row0 = 0;
+  kcamconf[chn].row0 = 1;
   kcamconf[chn].row1 = 256;
-  kcamconf[chn].col0 = 0;
+  kcamconf[chn].col0 = 1;
   kcamconf[chn].col1 = 10;
   
   printCRED1STRUCT(0);
