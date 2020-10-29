@@ -156,7 +156,7 @@ int main() {
   
   int cmdOK = 0;
   EdtDev *ed;
-  int unit = 1; // 1 for kcam
+  int unit = 0; // 1 for kcam
   int chn = 0;
   int baud = 115200;
   int timeout = 0;

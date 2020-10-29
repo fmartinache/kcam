@@ -11,7 +11,7 @@ static void usage(char *progname, char *errmsg);
 // ============================================================================
 int main(int argc, char **argv) {
   int     i;
-  int     unit = 1;
+  int     unit = 0;
   int     channel = 0;
   int     overrun, overruns=0;
   int     timeout;

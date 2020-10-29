@@ -1,8 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 
-wdir = "/home/scexao/frantz/CRED1/KCAM/kcam/"
+home = os.getenv('HOME')
+wdir = home+"/Progs/camera/kcam/"
 
 # ------------------------------------------------------------------
 #               short-hand for tmux commands
@@ -22,7 +23,7 @@ def tmux(cargs="", session="kcam_server", command="send-keys"):
 #                         camera command
 # ------------------------------------------------------------------
 def camera_cmd(cmd):
-    tmux(session="kcamserver", cargs=cmd)
+    tmux(session="kcam_server", cargs=cmd)
 
 
 # ------------------------------------------------------------------
@@ -30,7 +31,7 @@ def camera_cmd(cmd):
 # ------------------------------------------------------------------
 def init_setup():
     # start and set-up the two required tmux sessions
-    os.system("/opt/EDTpdv/initcam -u 1 -c 0 -f %s/cred1_FGSetup_16bit.cfg"%(wdir))
+    os.system("/opt/EDTpdv/initcam -u 0 -c 0 -f %s/cred1_FGSetup_16bit.cfg"%(wdir))
     os.system("tmux new-session -s 'kcam_server' -d")
     os.system("tmux new-session -s 'kcam_fetcher' -d")
 
